@@ -1,0 +1,50 @@
+using System;
+using System.Windows.Input;
+
+namespace Shiftly.Wpf.Common
+{
+    /// <summary>
+    /// מימוש ICommand עבור פקודות במודל MVVM
+    /// תומך בחסימת כפתורי שליחה (Pre-Submit Block) דרך CanExecute
+    /// </summary>
+    public class RelayCommand : ICommand
+    {
+        private readonly Action<object?> _execute;
+        private readonly Predicate<object?>? _canExecute;
+
+        public RelayCommand(Action<object?> execute, Predicate<object?>? canExecute = null)
+        {
+            _execute = execute ?? throw new ArgumentNullException(nameof(execute));
+            _canExecute = canExecute;
+        }
+
+        public RelayCommand(Action execute, Func<bool>? canExecute = null)
+            : this(_ => execute(), canExecute != null ? _ => canExecute() : null)
+        {
+        }
+
+        public bool CanExecute(object? parameter)
+        {
+            return _canExecute == null || _canExecute(parameter);
+        }
+
+        public void Execute(object? parameter)
+        {
+            _execute(parameter);
+        }
+
+        public event EventHandler? CanExecuteChanged
+        {
+            add => CommandManager.RequerySuggested += value;
+            remove => CommandManager.RequerySuggested -= value;
+        }
+
+        /// <summary>
+        /// רענון יזום של מצב הכפתור (בדיקת CanExecute מחדש)
+        /// </summary>
+        public void RaiseCanExecuteChanged()
+        {
+            CommandManager.InvalidateRequerySuggested();
+        }
+    }
+}

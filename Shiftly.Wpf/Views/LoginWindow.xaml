@@ -1,0 +1,100 @@
+<Window x:Class="Shiftly.Wpf.Views.LoginWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:Shiftly.Wpf.ViewModels"
+        Title="Shiftly - התחברות למערכת" 
+        Height="560" Width="440"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource BgDarkBrush}"
+        FlowDirection="RightToLeft"
+        ResizeMode="NoResize">
+    
+    <Window.DataContext>
+        <vm:LoginViewModel/>
+    </Window.DataContext>
+
+    <Grid Margin="28">
+        <Border Background="{StaticResource CardBgBrush}"
+                BorderBrush="{StaticResource CardBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="14"
+                Padding="24">
+            
+            <StackPanel VerticalAlignment="Center">
+                
+                <!-- לוגו וכותרת המערכת -->
+                <StackPanel HorizontalAlignment="Center" Margin="0,0,0,24">
+                    <TextBlock Text="🍔 Shiftly" 
+                               FontSize="30" 
+                               FontWeight="Bold" 
+                               Foreground="{StaticResource PrimaryAccentBrush}"
+                               HorizontalAlignment="Center"/>
+                    <TextBlock Text="מערכת חכמה לניהול משמרות ומלאי" 
+                               FontSize="13" 
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               HorizontalAlignment="Center"
+                               Margin="0,4,0,0"/>
+                </StackPanel>
+
+                <!-- שדה שם משתמש -->
+                <TextBlock Text="שם משתמש" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,6"/>
+                <TextBox Style="{StaticResource ModernTextBoxStyle}"
+                         Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}"
+                         Height="38"/>
+                <TextBlock Text="{Binding UsernameError}" 
+                           Foreground="{StaticResource ErrorBrush}" 
+                           FontSize="11" 
+                           Margin="2,3,0,10"
+                           Visibility="{Binding UsernameError, Converter={x:Null}}"/>
+
+                <!-- שדה סיסמה -->
+                <TextBlock Text="סיסמה" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,6"/>
+                <PasswordBox x:Name="UserPasswordBox"
+                             Style="{StaticResource ModernPasswordBoxStyle}"
+                             PasswordChanged="UserPasswordBox_PasswordChanged"
+                             Height="38"/>
+                <TextBlock Text="{Binding PasswordError}" 
+                           Foreground="{StaticResource ErrorBrush}" 
+                           FontSize="11" 
+                           Margin="2,3,0,14"/>
+
+                <!-- כפתור התחברות (חסימת Pre-Submit Block כאשר הקלט אינו תקין) -->
+                <Button Content="התחבר למערכת" 
+                        Style="{StaticResource ModernButtonStyle}"
+                        Command="{Binding LoginCommand}"
+                        Height="42"
+                        Margin="0,6,0,10"/>
+
+                <!-- כפתור כניסה למצב דמו / אורח (Guest) -->
+                <Button Content="מצב דמו / אורח (Guest Demo)"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Command="{Binding GuestDemoCommand}"
+                        Height="38"
+                        Margin="0,0,0,16"/>
+
+                <!-- הודעת סטטוס / שגיאה מהשרת -->
+                <TextBlock Text="{Binding StatusMessage}" 
+                           Foreground="{StaticResource PrimaryAccentBrush}" 
+                           FontSize="12" 
+                           TextWrapping="Wrap"
+                           HorizontalAlignment="Center"
+                           TextAlignment="Center"
+                           Margin="0,0,0,12"/>
+
+                <!-- קישור להרשמת עובד חדש -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,6,0,0">
+                    <TextBlock Text="עובד חדש בסניף? " Foreground="{StaticResource TextSecondaryBrush}" FontSize="13"/>
+                    <Button Content="הירשם כאן" 
+                            Command="{Binding OpenRegisterCommand}"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Foreground="{StaticResource SecondaryAccentBrush}"
+                            FontWeight="Bold"
+                            FontSize="13"
+                            Cursor="Hand"/>
+                </StackPanel>
+                
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>
