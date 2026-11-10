@@ -1,24 +1,25 @@
 using System;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Shiftly.Server.Data;
 using Shiftly.Server.Services;
 using Shiftly.Shared.Interfaces;
 
+if (!OperatingSystem.IsWindows())
+{
+    throw new PlatformNotSupportedException("Shiftly.Server requires Windows for Microsoft Access (System.Data.OleDb).");
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. הוספת שירותי מסד נתונים - Entity Framework Core עם SQL Server / LocalDB
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? "Server=(localdb)\\MSSQLLocalDB;Database=ShiftlyDB;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True";
-
-builder.Services.AddDbContext<ShiftlyDbContext>(options =>
-    options.UseSqlServer(connectionString));
+// 1. שכבת גישה לנתונים: Microsoft Access (.accdb) בלבד באמצעות System.Data.OleDb
+builder.Services.AddSingleton<AccessConnectionFactory>();
 
 // 2. הזרקת תלויות (Dependency Injection) לשכבת השירותים
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IShiftlyService, ShiftlyService>();
+builder.Services.AddScoped<BranchService>();
 
 // 3. הגדרת בקרים ו-Swagger
 builder.Services.AddControllers();
@@ -38,22 +39,11 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// 5. אתחול מסד הנתונים והזנת נתונים ראשוניים (Seeding)
+// 5. אתחול אוטומטי של ShiftlyDatabase.accdb, יצירת 7 הטבלאות והזנת נתונים ראשוניים (Seeding)
 using (var scope = app.Services.CreateScope())
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<ShiftlyDbContext>();
-    try
-    {
-        dbContext.Database.EnsureCreated();
-        dbContext.SeedInitialUsers();
-    }
-    catch (Exception)
-    {
-        dbContext.ChangeTracker.Clear();
-        dbContext.Database.EnsureDeleted();
-        dbContext.Database.EnsureCreated();
-        dbContext.SeedInitialUsers();
-    }
+    var connectionFactory = scope.ServiceProvider.GetRequiredService<AccessConnectionFactory>();
+    AccessDbInitializer.Initialize(connectionFactory);
 }
 
 // 6. הגדרת צינור הבקשות (HTTP Request Pipeline)

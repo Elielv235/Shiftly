@@ -42,6 +42,11 @@ namespace Shiftly.Wpf.Views
                 var adminWin = new AdminDashboardWindow(loggedInUser);
                 adminWin.Show();
             }
+            else if (loggedInUser.RoleName == "ShiftManager")
+            {
+                var managerHub = new ManagerHubWindow();
+                managerHub.Show();
+            }
             else
             {
                 var workerWin = new WorkerAvailabilityWindow();

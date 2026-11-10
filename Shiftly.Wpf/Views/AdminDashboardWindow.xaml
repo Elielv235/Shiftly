@@ -72,7 +72,8 @@
                     <TextBlock Text=" | לוח בקרה מנהל (סבב 2)" Foreground="#94A3B8" FontSize="16" VerticalAlignment="Center" Margin="10,0,0,0"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right">
-                    <TextBlock Text="מחובר: אליאל וולקונסקי (HRAdmin)" Foreground="#E2E8F0" VerticalAlignment="Center" Margin="0,0,15,0"/>
+                    <TextBlock Text="{Binding CurrentUserHeader}" Foreground="#E2E8F0" VerticalAlignment="Center" Margin="0,0,15,0"/>
+                    <Button Content="📦 מרכז משמרות ומלאי (סבב 3)" Command="{Binding OpenManagerHubCommand}" Style="{StaticResource AdminActionButtonStyle}" Background="#F59E0B" Foreground="#0F172A" Margin="0,0,10,0"/>
                     <Button Content="התנתק" Command="{Binding LogoutCommand}" Background="#EF4444" Foreground="White" FontWeight="Bold" Padding="12,6" BorderThickness="0"/>
                 </StackPanel>
             </DockPanel>

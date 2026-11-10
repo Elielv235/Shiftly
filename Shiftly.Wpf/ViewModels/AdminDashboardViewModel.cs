@@ -30,6 +30,7 @@ namespace Shiftly.Wpf.ViewModels
             ToggleStatusCommand = new RelayCommand(async _ => await ToggleStatusAsync(), _ => SelectedUser != null);
             Test403Command = new RelayCommand(async _ => await Test403Async());
             TriggerAiDialogCommand = new RelayCommand(_ => MessageBox.Show("מודול שיבוץ מבוסס AI מתוכנן לסבב 4 בהתאם להנחיות המנחה זכי חן.", "שיבוץ חכם", MessageBoxButton.OK, MessageBoxImage.Information));
+            OpenManagerHubCommand = new RelayCommand(_ => OpenManagerHub());
             LogoutCommand = new RelayCommand(_ => Logout());
 
             _ = LoadDataAsync();
@@ -85,12 +86,16 @@ namespace Shiftly.Wpf.ViewModels
             set => SetProperty(ref _stats, value);
         }
         public string SelectedUserDisplayName => SelectedUser != null ? $"{SelectedUser.FullName} ({SelectedUser.Username})" : "בחר עובד מהרשימה";
+        public string CurrentUserHeader => _apiClient.CurrentUser != null
+            ? $"מחובר: {_apiClient.CurrentUser.FullName} ({_apiClient.CurrentUser.RoleName})"
+            : "מחובר: אליאל וולקונסקי (HRAdmin)";
 
         public ICommand RefreshUsersCommand { get; }
         public ICommand SaveRoleCommand { get; }
         public ICommand ToggleStatusCommand { get; }
         public ICommand Test403Command { get; }
         public ICommand TriggerAiDialogCommand { get; }
+        public ICommand OpenManagerHubCommand { get; }
         public ICommand LogoutCommand { get; }
 
         private async Task LoadDataAsync()
@@ -147,6 +152,13 @@ namespace Shiftly.Wpf.ViewModels
         {
             string res = await _apiClient.Test403ForbiddenAsync();
             MessageBox.Show(res, "בדיקת הרשאות שרת", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+
+        private void OpenManagerHub()
+        {
+            var hubWin = new Views.ManagerHubWindow();
+            hubWin.Show();
+            Application.Current.Windows.OfType<Window>().FirstOrDefault(w => w is Views.AdminDashboardWindow)?.Close();
         }
 
         private void Logout()

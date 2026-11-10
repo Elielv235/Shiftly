@@ -262,5 +262,211 @@ namespace Shiftly.Wpf.Services
             catch { }
             return new List<AvailabilityViewDTO>();
         }
+
+        // =========================================================================
+        // CYCLE 3 REST API METHODS (ShiftSwapRequests & SupplyOrders)
+        // Strict REST JSON only - zero direct DB access in WPF!
+        // =========================================================================
+
+        private void AttachUserIdentityHeader(HttpRequestMessage request)
+        {
+            if (CurrentUser != null && CurrentUser.UserId > 0)
+            {
+                request.Headers.Add("X-User-Id", CurrentUser.UserId.ToString());
+            }
+        }
+
+        private static string FormatServerError(int statusCode, string rawBody)
+        {
+            string trimmed = rawBody.Trim().Trim('"');
+            if (!string.IsNullOrWhiteSpace(trimmed))
+                return trimmed;
+
+            return statusCode switch
+            {
+                401 => "שגיאה 401 (Unauthorized): יש להתחבר למערכת עם חשבון פעיל.",
+                403 => "שגיאה 403 (Forbidden): אין לך הרשאה לביצוע פעולה זו.",
+                404 => "שגיאה 404: המשאב המבוקש לא נמצא בשרת.",
+                _ => $"שגיאת שרת ({statusCode})."
+            };
+        }
+
+        public async Task<OperationResultDto<List<WorkerShiftAssignmentDto>>> GetWorkerAssignmentsAsync()
+        {
+            try
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Get, "api/shiftswaps/my-assignments");
+                AttachUserIdentityHeader(request);
+
+                var response = await _httpClient.SendAsync(request);
+                int statusCode = (int)response.StatusCode;
+                string body = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var data = JsonSerializer.Deserialize<List<WorkerShiftAssignmentDto>>(body, _jsonOptions) ?? new();
+                    return OperationResultDto<List<WorkerShiftAssignmentDto>>.Ok(data);
+                }
+
+                return OperationResultDto<List<WorkerShiftAssignmentDto>>.Fail(statusCode, FormatServerError(statusCode, body));
+            }
+            catch (Exception ex)
+            {
+                return OperationResultDto<List<WorkerShiftAssignmentDto>>.Fail(500, $"שגיאת תקשורת עם השרת: {ex.Message}");
+            }
+        }
+
+        public async Task<OperationResultDto<List<CoworkerOptionDto>>> GetSwapTargetWorkersAsync()
+        {
+            try
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Get, "api/shiftswaps/coworkers");
+                AttachUserIdentityHeader(request);
+
+                var response = await _httpClient.SendAsync(request);
+                int statusCode = (int)response.StatusCode;
+                string body = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var data = JsonSerializer.Deserialize<List<CoworkerOptionDto>>(body, _jsonOptions) ?? new();
+                    return OperationResultDto<List<CoworkerOptionDto>>.Ok(data);
+                }
+
+                return OperationResultDto<List<CoworkerOptionDto>>.Fail(statusCode, FormatServerError(statusCode, body));
+            }
+            catch (Exception ex)
+            {
+                return OperationResultDto<List<CoworkerOptionDto>>.Fail(500, $"שגיאת תקשורת עם השרת: {ex.Message}");
+            }
+        }
+
+        public async Task<OperationResultDto> SubmitShiftSwapAsync(ShiftSwapRequestCreateDto dto)
+        {
+            try
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Post, "api/shiftswaps");
+                AttachUserIdentityHeader(request);
+                request.Content = new StringContent(JsonSerializer.Serialize(dto), Encoding.UTF8, "application/json");
+
+                var response = await _httpClient.SendAsync(request);
+                int statusCode = (int)response.StatusCode;
+                string body = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return OperationResultDto.Ok("בקשת החלפת המשמרת נשלחה בהצלחה וממתינה לאישור מנהל!");
+                }
+
+                return OperationResultDto.Fail(statusCode, FormatServerError(statusCode, body));
+            }
+            catch (Exception ex)
+            {
+                return OperationResultDto.Fail(500, $"שגיאת תקשורת עם השרת: {ex.Message}");
+            }
+        }
+
+        public async Task<OperationResultDto<List<ShiftSwapItemDto>>> GetPendingShiftSwapsAsync()
+        {
+            try
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Get, "api/shiftswaps/pending");
+                AttachUserIdentityHeader(request);
+
+                var response = await _httpClient.SendAsync(request);
+                int statusCode = (int)response.StatusCode;
+                string body = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var data = JsonSerializer.Deserialize<List<ShiftSwapItemDto>>(body, _jsonOptions) ?? new();
+                    return OperationResultDto<List<ShiftSwapItemDto>>.Ok(data);
+                }
+
+                return OperationResultDto<List<ShiftSwapItemDto>>.Fail(statusCode, FormatServerError(statusCode, body));
+            }
+            catch (Exception ex)
+            {
+                return OperationResultDto<List<ShiftSwapItemDto>>.Fail(500, $"שגיאת תקשורת עם השרת: {ex.Message}");
+            }
+        }
+
+        public async Task<OperationResultDto> ReviewShiftSwapAsync(ShiftSwapReviewDto dto)
+        {
+            try
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Post, "api/shiftswaps/review");
+                AttachUserIdentityHeader(request);
+                request.Content = new StringContent(JsonSerializer.Serialize(dto), Encoding.UTF8, "application/json");
+
+                var response = await _httpClient.SendAsync(request);
+                int statusCode = (int)response.StatusCode;
+                string body = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return OperationResultDto.Ok(dto.IsApproved
+                        ? "בקשת ההחלפה אושרה והשיבוץ עודכן במסד הנתונים."
+                        : "בקשת ההחלפה נדחתה.");
+                }
+
+                return OperationResultDto.Fail(statusCode, FormatServerError(statusCode, body));
+            }
+            catch (Exception ex)
+            {
+                return OperationResultDto.Fail(500, $"שגיאת תקשורת עם השרת: {ex.Message}");
+            }
+        }
+
+        public async Task<OperationResultDto<List<SupplyOrderItemDto>>> GetSupplyOrdersAsync()
+        {
+            try
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Get, "api/supplyorders");
+                AttachUserIdentityHeader(request);
+
+                var response = await _httpClient.SendAsync(request);
+                int statusCode = (int)response.StatusCode;
+                string body = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var data = JsonSerializer.Deserialize<List<SupplyOrderItemDto>>(body, _jsonOptions) ?? new();
+                    return OperationResultDto<List<SupplyOrderItemDto>>.Ok(data);
+                }
+
+                return OperationResultDto<List<SupplyOrderItemDto>>.Fail(statusCode, FormatServerError(statusCode, body));
+            }
+            catch (Exception ex)
+            {
+                return OperationResultDto<List<SupplyOrderItemDto>>.Fail(500, $"שגיאת תקשורת עם השרת: {ex.Message}");
+            }
+        }
+
+        public async Task<OperationResultDto<SupplyOrderItemDto>> CreateSupplyOrderAsync(SupplyOrderCreateDto dto)
+        {
+            try
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Post, "api/supplyorders");
+                AttachUserIdentityHeader(request);
+                request.Content = new StringContent(JsonSerializer.Serialize(dto), Encoding.UTF8, "application/json");
+
+                var response = await _httpClient.SendAsync(request);
+                int statusCode = (int)response.StatusCode;
+                string body = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var created = JsonSerializer.Deserialize<SupplyOrderItemDto>(body, _jsonOptions);
+                    return OperationResultDto<SupplyOrderItemDto>.Ok(created!, "הזמנת המלאי נוצרה ונשמרה בהצלחה!");
+                }
+
+                return OperationResultDto<SupplyOrderItemDto>.Fail(statusCode, FormatServerError(statusCode, body));
+            }
+            catch (Exception ex)
+            {
+                return OperationResultDto<SupplyOrderItemDto>.Fail(500, $"שגיאת תקשורת עם השרת: {ex.Message}");
+            }
+        }
     }
 }

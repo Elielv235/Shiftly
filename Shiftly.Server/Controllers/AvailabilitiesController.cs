@@ -1,23 +1,22 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Shiftly.Server.Data;
-using Shiftly.Server.Models;
-using Shiftly.Shared.DTOs;
 using System.Collections.Generic;
-using System.Linq;
+using System.Runtime.Versioning;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Shiftly.Server.Services;
+using Shiftly.Shared.DTOs;
 
 namespace Shiftly.Server.Controllers
 {
     [ApiController]
     [Route("api/availabilities")]
+    [SupportedOSPlatform("windows")]
     public class AvailabilitiesController : ControllerBase
     {
-        private readonly ShiftlyDbContext _context;
+        private readonly BranchService _branchService;
 
-        public AvailabilitiesController(ShiftlyDbContext context)
+        public AvailabilitiesController(BranchService branchService)
         {
-            _context = context;
+            _branchService = branchService;
         }
 
         [HttpPost("submit")]
@@ -29,42 +28,15 @@ namespace Shiftly.Server.Controllers
             if (!dto.CanWorkMorning && !dto.CanWorkEvening)
                 return BadRequest("At least one shift option must be selected.");
 
-            var record = new Availability
-            {
-                UserId = dto.UserId,
-                TargetDate = dto.TargetDate,
-                CanWorkMorning = dto.CanWorkMorning,
-                CanWorkEvening = dto.CanWorkEvening,
-                Notes = dto.Notes,
-                Status = "Pending"
-            };
-
-            _context.Availabilities.Add(record);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "Availability submitted successfully.", id = record.AvailabilityId });
+            int newId = await _branchService.SubmitAvailabilityAsync(dto);
+            return Ok(new { message = "Availability submitted successfully.", id = newId });
         }
 
         [HttpGet("branch")]
         public async Task<ActionResult<List<AvailabilityViewDTO>>> GetBranchAvailabilities()
         {
-            var list = await _context.Availabilities
-                .Include(a => a.User)
-                .Select(a => new AvailabilityViewDTO
-                {
-                    AvailabilityId = a.AvailabilityId,
-                    UserId = a.UserId,
-                    WorkerName = a.User != null ? a.User.FullName : "עובד",
-                    TargetDate = a.TargetDate,
-                    CanWorkMorning = a.CanWorkMorning,
-                    CanWorkEvening = a.CanWorkEvening,
-                    Notes = a.Notes,
-                    Status = a.Status
-                })
-                .ToListAsync();
-
+            var list = await _branchService.GetBranchAvailabilitiesAsync();
             return Ok(list);
         }
     }
 }
-

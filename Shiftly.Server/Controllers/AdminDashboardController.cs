@@ -1,21 +1,21 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Shiftly.Server.Data;
-using Shiftly.Shared.DTOs;
-using System.Linq;
+using System.Runtime.Versioning;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Shiftly.Server.Services;
+using Shiftly.Shared.DTOs;
 
 namespace Shiftly.Server.Controllers
 {
     [ApiController]
     [Route("api/admin")]
+    [SupportedOSPlatform("windows")]
     public class AdminDashboardController : ControllerBase
     {
-        private readonly ShiftlyDbContext _context;
+        private readonly BranchService _branchService;
 
-        public AdminDashboardController(ShiftlyDbContext context)
+        public AdminDashboardController(BranchService branchService)
         {
-            _context = context;
+            _branchService = branchService;
         }
 
         [HttpGet("stats")]
@@ -27,17 +27,8 @@ namespace Shiftly.Server.Controllers
                 return StatusCode(403, "Access denied. HRAdmin role required.");
             }
 
-            var stats = new DashboardStatsDTO
-            {
-                ActiveWorkersCount = await _context.Users.CountAsync(u => u.IsActive),
-                PendingAvailabilitiesCount = await _context.Availabilities.CountAsync(a => a.Status == "Pending"),
-                MorningRequestsCount = await _context.Availabilities.CountAsync(a => a.CanWorkMorning),
-                EveningRequestsCount = await _context.Availabilities.CountAsync(a => a.CanWorkEvening),
-                DefinedShiftsCount = await _context.Shifts.CountAsync()
-            };
-
+            var stats = await _branchService.GetDashboardStatsAsync();
             return Ok(stats);
         }
     }
 }
-

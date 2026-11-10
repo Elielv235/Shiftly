@@ -67,3 +67,4 @@ GO
 
 PRINT 'ShiftlyDB Cycle 2 Schema & Seed data successfully prepared!';
 GO
+

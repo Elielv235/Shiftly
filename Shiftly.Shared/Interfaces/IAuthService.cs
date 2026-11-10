@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Shiftly.Shared.DTOs;
 
@@ -17,5 +17,8 @@ namespace Shiftly.Shared.Interfaces
 
         // עדכון הרשאת משתמש (אדמין בלבד - אכיפת SEC-M13)
         Task<bool> UpdateUserRoleAsync(int targetUserId, int newRoleId);
+
+        // שינוי סטטוס פעיל/מושעה של משתמש (FR-06/FR-07)
+        Task<bool> UpdateUserStatusAsync(int targetUserId, bool isActive);
     }
 }

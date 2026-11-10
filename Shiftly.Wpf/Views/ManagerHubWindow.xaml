@@ -1,0 +1,240 @@
+<Window x:Class="Shiftly.Wpf.Views.ManagerHubWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Shiftly - מרכז ניהול משמרות ומלאי (סבב 3)" Height="720" Width="1060"
+        WindowStartupLocation="CenterScreen" FlowDirection="RightToLeft"
+        Background="#0F172A">
+    <Window.Resources>
+        <!-- Explicit High-Contrast TabItem Style -->
+        <Style TargetType="TabItem">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="TabBorder" Background="#0F172A" BorderBrush="#334155" BorderThickness="1,1,1,0" CornerRadius="8,8,0,0" Margin="0,0,4,0" Padding="18,10">
+                            <ContentPresenter x:Name="ContentSite" ContentSource="Header" HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="TabBorder" Property="Background" Value="#1E293B"/>
+                                <Setter TargetName="TabBorder" Property="BorderBrush" Value="#F59E0B"/>
+                                <Setter Property="Panel.ZIndex" Value="100"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="TabBorder" Property="Background" Value="#334155"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Explicit High-Contrast Enabled/Disabled Action Button Style -->
+        <Style x:Key="ManagerActionButtonStyle" TargetType="Button">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Padding" Value="14,9"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Background" Value="#334155"/>
+                                <Setter TargetName="border" Property="Opacity" Value="0.65"/>
+                                <Setter Property="Foreground" Value="#94A3B8"/>
+                                <Setter Property="Cursor" Value="No"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Opacity" Value="0.88"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Top Header Bar -->
+        <Border Grid.Row="0" Background="#1E293B" CornerRadius="10" Padding="15" Margin="0,0,0,15">
+            <DockPanel>
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                    <TextBlock Text="🍔 Shiftly" Foreground="#F59E0B" FontSize="22" FontWeight="Bold" VerticalAlignment="Center"/>
+                    <TextBlock Text=" | מרכז ניהול משמרות ומלאי (סבב 3)" Foreground="#94A3B8" FontSize="16" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right">
+                    <TextBlock Text="{Binding CurrentUserHeader}" Foreground="#E2E8F0" VerticalAlignment="Center" Margin="0,0,15,0"/>
+                    <Button Content="👥 דשבורד מנהל" Command="{Binding OpenAdminDashboardCommand}"
+                            Visibility="{Binding AdminBackButtonVisibility}"
+                            Style="{StaticResource ManagerActionButtonStyle}"
+                            Background="#334155" Foreground="#F59E0B" Margin="0,0,10,0"/>
+                    <Button Content="התנתק" Command="{Binding LogoutCommand}"
+                            Style="{StaticResource ManagerActionButtonStyle}"
+                            Background="#EF4444" Foreground="White"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- Cycle 3 Two-Tab Manager Hub -->
+        <TabControl Grid.Row="1" Background="#1E293B" BorderBrush="#334155" BorderThickness="1">
+
+            <!-- TAB 1: SHIFT SWAP REQUESTS -->
+            <TabItem>
+                <TabItem.Header>
+                    <TextBlock Text="🔄 בקשות החלפת משמרות" Foreground="#F59E0B" FontSize="14" FontWeight="Bold"/>
+                </TabItem.Header>
+                <Grid Margin="16">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <DockPanel Grid.Row="0" Margin="0,0,0,12">
+                        <TextBlock Text="בקשות החלפה ממתינות לאישור מנהל משמרת / HRAdmin" Foreground="#E2E8F0" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
+                        <Button Content="🔄 רענן נתונים" Command="{Binding RefreshAllCommand}"
+                                DockPanel.Dock="Right" HorizontalAlignment="Right"
+                                Style="{StaticResource ManagerActionButtonStyle}"
+                                Background="#334155" Foreground="White"/>
+                    </DockPanel>
+
+                    <DataGrid Grid.Row="1"
+                              ItemsSource="{Binding PendingSwaps}"
+                              SelectedItem="{Binding SelectedSwap}"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              CanUserAddRows="False"
+                              Background="#0F172A"
+                              RowBackground="#1E293B"
+                              AlternatingRowBackground="#0F172A"
+                              Foreground="White"
+                              BorderBrush="#334155"
+                              GridLinesVisibility="Horizontal"
+                              HeadersVisibility="Column"
+                              Margin="0,0,0,14">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="מזהה" Binding="{Binding SwapId}" Width="60"/>
+                            <DataGridTextColumn Header="תאריך משמרת" Binding="{Binding ShiftDate, StringFormat=dd/MM/yyyy}" Width="115"/>
+                            <DataGridTextColumn Header="סוג משמרת" Binding="{Binding ShiftType}" Width="95"/>
+                            <DataGridTextColumn Header="עובד מבקש" Binding="{Binding RequesterName}" Width="175"/>
+                            <DataGridTextColumn Header="עובד מחליף" Binding="{Binding TargetWorkerName}" Width="175"/>
+                            <DataGridTextColumn Header="סיבת ההחלפה" Binding="{Binding Reason}" Width="*"/>
+                            <DataGridTextColumn Header="סטטוס" Binding="{Binding Status}" Width="90"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <!-- Approval / Rejection Controls -->
+                    <Border Grid.Row="2" Background="#0F172A" CornerRadius="8" Padding="14">
+                        <DockPanel>
+                            <TextBlock Text="{Binding SelectedSwapSummary}" Foreground="#CBD5E1" FontSize="13" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right">
+                                <Button Content="✅ אשר החלפה והעבר שיבוץ"
+                                        Command="{Binding ApproveSwapCommand}"
+                                        Style="{StaticResource ManagerActionButtonStyle}"
+                                        Background="#10B981" Foreground="#0F172A" Margin="0,0,10,0"/>
+                                <Button Content="❌ דחה בקשה"
+                                        Command="{Binding RejectSwapCommand}"
+                                        Style="{StaticResource ManagerActionButtonStyle}"
+                                        Background="#EF4444" Foreground="White"/>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- TAB 2: SUPPLY ORDERS -->
+            <TabItem>
+                <TabItem.Header>
+                    <TextBlock Text="📦 הזמנות מלאי וספקים" Foreground="#F59E0B" FontSize="14" FontWeight="Bold"/>
+                </TabItem.Header>
+                <Grid Margin="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="340"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Create Supply Order Form (with Real-Time Validation) -->
+                    <Border Grid.Column="0" Background="#0F172A" CornerRadius="8" Padding="16" Margin="0,0,16,0">
+                        <StackPanel>
+                            <TextBlock Text="יצירת הזמנת מלאי חדשה" Foreground="#F59E0B" FontSize="16" FontWeight="Bold" Margin="0,0,0,14"/>
+
+                            <TextBlock Text="פירוט פריטים וכמויות (שדה חובה):" Foreground="#94A3B8" FontSize="13" Margin="0,0,0,6"/>
+                            <TextBox Text="{Binding ItemsSummary, UpdateSourceTrigger=PropertyChanged}"
+                                     Height="105" TextWrapping="Wrap" AcceptsReturn="True"
+                                     Background="#1E293B" Foreground="White" CaretBrush="#F59E0B"
+                                     BorderBrush="#334155" Padding="10" FontSize="13" Margin="0,0,0,6"/>
+
+                            <!-- Real-Time Validation Feedback -->
+                            <TextBlock Text="{Binding ItemsSummaryValidationError}"
+                                       Foreground="#F87171" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,14"/>
+
+                            <TextBlock Text="הערות נוספות לספק / למחסן (אופציונלי):" Foreground="#94A3B8" FontSize="13" Margin="0,0,0,6"/>
+                            <TextBox Text="{Binding OrderNotes, UpdateSourceTrigger=PropertyChanged}"
+                                     Height="65" TextWrapping="Wrap" AcceptsReturn="True"
+                                     Background="#1E293B" Foreground="White" CaretBrush="#F59E0B"
+                                     BorderBrush="#334155" Padding="10" FontSize="13" Margin="0,0,0,18"/>
+
+                            <Button Content="📦 צור הזמנת מלאי"
+                                    Command="{Binding CreateSupplyOrderCommand}"
+                                    Style="{StaticResource ManagerActionButtonStyle}"
+                                    Background="#F59E0B" Foreground="#0F172A"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Existing Supply Orders List -->
+                    <Grid Grid.Column="1">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <DockPanel Grid.Row="0" Margin="0,0,0,10">
+                            <TextBlock Text="רשימת הזמנות מלאי בסניף" Foreground="#E2E8F0" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
+                            <Button Content="🔄 רענן רשימה" Command="{Binding RefreshAllCommand}"
+                                    DockPanel.Dock="Right" HorizontalAlignment="Right"
+                                    Style="{StaticResource ManagerActionButtonStyle}"
+                                    Background="#334155" Foreground="White"/>
+                        </DockPanel>
+
+                        <DataGrid Grid.Row="1"
+                                  ItemsSource="{Binding SupplyOrders}"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  CanUserAddRows="False"
+                                  Background="#0F172A"
+                                  RowBackground="#1E293B"
+                                  AlternatingRowBackground="#0F172A"
+                                  Foreground="White"
+                                  BorderBrush="#334155"
+                                  GridLinesVisibility="Horizontal"
+                                  HeadersVisibility="Column">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="#" Binding="{Binding OrderId}" Width="45"/>
+                                <DataGridTextColumn Header="תאריך" Binding="{Binding CreatedAt, StringFormat=dd/MM/yyyy}" Width="95"/>
+                                <DataGridTextColumn Header="מנהל מזמין" Binding="{Binding ManagerName}" Width="145"/>
+                                <DataGridTextColumn Header="פירוט פריטים" Binding="{Binding ItemsSummary}" Width="*"/>
+                                <DataGridTextColumn Header="סטטוס" Binding="{Binding Status}" Width="85"/>
+                                <DataGridTextColumn Header="הערות" Binding="{Binding Notes}" Width="150"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </Grid>
+            </TabItem>
+        </TabControl>
+
+        <!-- Status Footer -->
+        <Border Grid.Row="2" Background="#1E293B" CornerRadius="6" Padding="10,6" Margin="0,12,0,0">
+            <TextBlock Text="{Binding StatusMessage}" Foreground="#F59E0B" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+        </Border>
+    </Grid>
+</Window>
