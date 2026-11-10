@@ -5,7 +5,7 @@
         WindowStartupLocation="CenterScreen" FlowDirection="RightToLeft"
         Background="#0F172A">
     <Window.Resources>
-        <!-- High-Contrast Submit Button Template -->
+        <!-- כפתור שליחה עם ניגודיות מלאה במצב פעיל וכבוי -->
         <Style x:Key="SubmitAvailabilityButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="#F59E0B"/>
             <Setter Property="Foreground" Value="#0F172A"/>
@@ -38,27 +38,22 @@
             </Setter>
         </Style>
 
-        <!-- Clean, High-Contrast ComboBox Style (Dark bold text ensures 100% visibility) -->
-        <Style x:Key="HighContrastDayComboBoxStyle" TargetType="ComboBox">
-            <Setter Property="Background" Value="#FFFFFF"/>
-            <Setter Property="Foreground" Value="#0F172A"/>
-            <Setter Property="BorderBrush" Value="#F59E0B"/>
-            <Setter Property="BorderThickness" Value="1.5"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Padding" Value="10,8"/>
-        </Style>
-
-        <Style x:Key="HighContrastDayItemStyle" TargetType="ComboBoxItem">
-            <Setter Property="Foreground" Value="#0F172A"/>
-            <Setter Property="Background" Value="#FFFFFF"/>
+        <!-- סגנון פריט בתוך ComboBox -->
+        <Style x:Key="DarkComboBoxItemStyle" TargetType="ComboBoxItem">
+            <Setter Property="Background" Value="#1E293B"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="BorderThickness" Value="0"/>
             <Style.Triggers>
                 <Trigger Property="IsHighlighted" Value="True">
                     <Setter Property="Background" Value="#F59E0B"/>
                     <Setter Property="Foreground" Value="#0F172A"/>
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#2563EB"/>
+                    <Setter Property="Foreground" Value="#FFFFFF"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -71,7 +66,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Top Header Bar -->
+        <!-- פס עליון -->
         <Border Grid.Row="0" Background="#1E293B" CornerRadius="8" Padding="15" Margin="0,0,0,20">
             <DockPanel>
                 <TextBlock Text="🍔 שיפטלי | הגשת זמינות שבועית לעובד" Foreground="#F59E0B" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
@@ -79,16 +74,19 @@
             </DockPanel>
         </Border>
 
-        <!-- Availability Form -->
+        <!-- טופס הגשת זמינות -->
         <Border Grid.Row="1" Background="#1E293B" CornerRadius="8" Padding="25">
             <StackPanel>
                 <TextBlock Text="בחר יום עבודה לשבוע הקרוב:" Foreground="#94A3B8" Margin="0,0,0,8" FontSize="14"/>
 
-                <!-- High-contrast, crystal-clear ComboBox for selecting target shift day -->
-                <ComboBox SelectedIndex="{Binding SelectedDayIndex, Mode=TwoWay, FallbackValue=0}" 
-                          Style="{StaticResource HighContrastDayComboBoxStyle}" 
-                          ItemContainerStyle="{StaticResource HighContrastDayItemStyle}"
-                          Width="300" HorizontalAlignment="Left" Margin="0,0,0,20">
+                <!-- ComboBox עם פריטים בעלי טקסט לבן מובהק -->
+                <ComboBox SelectedIndex="0" 
+                          ItemContainerStyle="{StaticResource DarkComboBoxItemStyle}"
+                          Background="#0F172A" 
+                          Foreground="#FFFFFF"
+                          BorderBrush="#F59E0B" 
+                          BorderThickness="1.5"
+                          Width="300" HorizontalAlignment="Left" Margin="0,0,0,20" Padding="8,6" FontSize="14">
                     <ComboBoxItem Content="יום ראשון (15/11/2026)"/>
                     <ComboBoxItem Content="יום שני (16/11/2026)"/>
                     <ComboBoxItem Content="יום שלישי (17/11/2026)"/>
@@ -110,7 +108,7 @@
             </StackPanel>
         </Border>
 
-        <!-- Status & Confirmation Message -->
+        <!-- הודעת משוב -->
         <Border Grid.Row="2" Background="#1E293B" CornerRadius="6" Padding="10" Margin="0,15,0,0">
             <TextBlock Text="{Binding StatusMessage}" Foreground="#10B981" FontWeight="Bold" HorizontalAlignment="Center"/>
         </Border>
