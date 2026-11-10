@@ -24,13 +24,13 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="btnBorder" Value="#334155" Property="Background"/>
-                                <Setter TargetName="btnBorder" Value="0.6" Property="Opacity"/>
+                                <Setter TargetName="btnBorder" Property="Background" Value="#334155"/>
+                                <Setter TargetName="btnBorder" Property="Opacity" Value="0.6"/>
                                 <Setter Property="Foreground" Value="#94A3B8"/>
                                 <Setter Property="Cursor" Value="No"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="btnBorder" Value="#D97706" Property="Background"/>
+                                <Setter TargetName="btnBorder" Property="Background" Value="#D97706"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -38,29 +38,84 @@
             </Setter>
         </Style>
 
-        <!-- Clean, High-Contrast Calendar & DatePicker Style -->
-        <!-- Ensures Day Numbers, Month Header, and Day-of-Week headers are 100% visible -->
-        <Style x:Key="HighContrastCalendarDayButton" TargetType="CalendarDayButton">
+        <!-- Robust High-Contrast Calendar Styles -->
+        <!-- 1. Day Buttons (1, 2, 3...) -->
+        <Style x:Key="SolidCalendarDayButtonStyle" TargetType="CalendarDayButton">
             <Setter Property="Foreground" Value="#0F172A"/>
             <Setter Property="FontSize" Value="13"/>
-            <Setter Property="FontWeight" Value="Medium"/>
-            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="MinWidth" Value="28"/>
             <Setter Property="MinHeight" Value="26"/>
-            <Setter Property="Margin" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CalendarDayButton">
+                        <Border x:Name="DayBorder" Background="Transparent" CornerRadius="4" Margin="1">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <ContentPresenter.Resources>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="#0F172A"/>
+                                        <Setter Property="FontWeight" Value="Bold"/>
+                                    </Style>
+                                </ContentPresenter.Resources>
+                            </ContentPresenter>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="DayBorder" Property="Background" Value="#F59E0B"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="DayBorder" Property="Background" Value="#E2E8F0"/>
+                            </Trigger>
+                            <Trigger Property="IsToday" Value="True">
+                                <Setter TargetName="DayBorder" Property="BorderBrush" Value="#3B82F6"/>
+                                <Setter TargetName="DayBorder" Property="BorderThickness" Value="1.5"/>
+                            </Trigger>
+                            <Trigger Property="IsInactive" Value="True">
+                                <Setter Property="Opacity" Value="0.35"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
-        <Style x:Key="HighContrastCalendar" TargetType="Calendar">
-            <Setter Property="Background" Value="#F8FAFC"/>
+        <!-- 2. Header Month/Year Button ("נובמבר 2026") -->
+        <Style x:Key="SolidCalendarHeaderButtonStyle" TargetType="CalendarButton">
+            <Setter Property="Foreground" Value="#0F172A"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CalendarButton">
+                        <Border Background="Transparent" Padding="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <ContentPresenter.Resources>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="#0F172A"/>
+                                        <Setter Property="FontWeight" Value="Bold"/>
+                                        <Setter Property="FontSize" Value="14"/>
+                                    </Style>
+                                </ContentPresenter.Resources>
+                            </ContentPresenter>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 3. Overall Calendar Style -->
+        <Style x:Key="SolidCalendarStyle" TargetType="Calendar">
+            <Setter Property="Background" Value="#FFFFFF"/>
             <Setter Property="BorderBrush" Value="#F59E0B"/>
             <Setter Property="BorderThickness" Value="2"/>
             <Setter Property="Foreground" Value="#0F172A"/>
-            <Setter Property="CalendarDayButtonStyle" Value="{StaticResource HighContrastCalendarDayButton}"/>
+            <Setter Property="CalendarDayButtonStyle" Value="{StaticResource SolidCalendarDayButtonStyle}"/>
+            <Setter Property="CalendarButtonStyle" Value="{StaticResource SolidCalendarHeaderButtonStyle}"/>
         </Style>
 
-        <Style x:Key="ShiftlyDatePickerStyle" TargetType="DatePicker">
-            <Setter Property="CalendarStyle" Value="{StaticResource HighContrastCalendar}"/>
+        <!-- 4. DatePicker Style -->
+        <Style x:Key="SolidDatePickerStyle" TargetType="DatePicker">
+            <Setter Property="CalendarStyle" Value="{StaticResource SolidCalendarStyle}"/>
             <Setter Property="Foreground" Value="#FFFFFF"/>
             <Setter Property="Background" Value="#1E293B"/>
             <Setter Property="BorderBrush" Value="#334155"/>
@@ -90,7 +145,7 @@
             <StackPanel>
                 <TextBlock Text="בחר יום עבודה לשבוע הקרוב:" Foreground="#94A3B8" Margin="0,0,0,6"/>
                 <DatePicker SelectedDate="{Binding TargetDate, Mode=TwoWay}" 
-                            Style="{StaticResource ShiftlyDatePickerStyle}"
+                            Style="{StaticResource SolidDatePickerStyle}"
                             Width="260" HorizontalAlignment="Left" Margin="0,0,0,20"/>
 
                 <TextBlock Text="משמרות מבוקשות (חובה לסמן לפחות אחת - SEC-M05):" Foreground="#94A3B8" Margin="0,0,0,10"/>
