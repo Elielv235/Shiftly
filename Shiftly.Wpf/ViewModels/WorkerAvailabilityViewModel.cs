@@ -12,7 +12,8 @@ namespace Shiftly.Wpf.ViewModels
     public class WorkerAvailabilityViewModel : ViewModelBase
     {
         private readonly ShiftlyApiClient _apiClient;
-        private DateTime _targetDate = DateTime.Today.AddDays(1);
+        private DateTime _targetDate = new DateTime(2026, 11, 15);
+        private int _selectedDayIndex = 0;
         private bool _canWorkMorning;
         private bool _canWorkEvening;
         private string _notes = string.Empty;
@@ -23,6 +24,18 @@ namespace Shiftly.Wpf.ViewModels
             _apiClient = ShiftlyApiClient.Instance;
             SubmitCommand = new RelayCommand(async _ => await SubmitAsync(), _ => CanSubmit());
             LogoutCommand = new RelayCommand(_ => Logout());
+        }
+
+        public int SelectedDayIndex
+        {
+            get => _selectedDayIndex;
+            set
+            {
+                if (SetProperty(ref _selectedDayIndex, value))
+                {
+                    TargetDate = new DateTime(2026, 11, 15).AddDays(value >= 0 ? value : 0);
+                }
+            }
         }
 
         public DateTime TargetDate
