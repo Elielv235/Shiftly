@@ -1,6 +1,6 @@
-﻿
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Shiftly.Server.Data;
 using Shiftly.Shared.DTOs;
 using Shiftly.Shared.Interfaces;
 
@@ -11,10 +11,12 @@ namespace Shiftly.Server.Controllers
     public class AdminUsersController : ControllerBase
     {
         private readonly IAuthService _authService;
+        private readonly ShiftlyDbContext _context;
 
-        public AdminUsersController(IAuthService authService)
+        public AdminUsersController(IAuthService authService, ShiftlyDbContext context)
         {
             _authService = authService;
+            _context = context;
         }
 
         /// <summary>
@@ -52,6 +54,19 @@ namespace Shiftly.Server.Controllers
             }
 
             return Ok("תפקיד המשתמש עודכן בהצלחה במסד הנתונים.");
+        }
+
+        /// <summary>
+        /// שינוי סטטוס פעיל/מושעה של עובד (FR-06/FR-07)
+        /// </summary>
+        [HttpPut("{id}/status")]
+        public async Task<IActionResult> ToggleUserStatus(int id, [FromBody] bool isActive)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null) return NotFound();
+            user.IsActive = isActive;
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Status updated successfully", isActive = user.IsActive });
         }
     }
 }

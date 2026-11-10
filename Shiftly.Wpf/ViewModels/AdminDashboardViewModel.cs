@@ -1,62 +1,50 @@
-using System;
-using System.Collections.ObjectModel;
-using System.Threading.Tasks;
-using System.Windows;
 using Shiftly.Shared.DTOs;
-using Shiftly.Shared.Enums;
 using Shiftly.Wpf.Common;
 using Shiftly.Wpf.Services;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Input;
 
 namespace Shiftly.Wpf.ViewModels
 {
-    /// <summary>
-    /// ViewModel עבור דשבורד מנהל וניהול משתמשים (AdminDashboardWindow)
-    /// מיישם SEC-M08, SEC-M13:
-    /// - מציג את רשימת העובדים שנשלפה מהשרת
-    /// - מאפשר לאדמין בלבד לעדכן תפקידים (Roles) של עובדים
-    /// - כולל כפתור בדיקה מיוחד להצגה לבוחן: הוכחת חסימת 403 Forbidden בשרת!
-    /// </summary>
     public class AdminDashboardViewModel : ViewModelBase
     {
-        private LoginResponseDTO _currentUser;
-        private ObservableCollection<UserListDTO> _users = new();
+        private readonly ShiftlyApiClient _apiClient;
+        private ObservableCollection<UserListDTO> _allUsers = new();
+        private ObservableCollection<UserListDTO> _filteredUsers = new();
         private UserListDTO? _selectedUser;
-        private string _selectedNewRole = "Worker";
-        private string? _statusMessage;
-        private bool _isLoading;
+        private string _selectedRole = "Worker";
+        private string _searchText = string.Empty;
+        private string _statusMessage = "מוכן";
+        private DashboardStatsDTO _stats = new();
 
-        public event Action? RequestLogout;
-
-        public RelayCommand LoadUsersCommand { get; }
-        public RelayCommand ChangeRoleCommand { get; }
-        public RelayCommand TestUnauthorizedAccessCommand { get; }
-        public RelayCommand LogoutCommand { get; }
-
-        public AdminDashboardViewModel(LoginResponseDTO currentUser)
+        public AdminDashboardViewModel()
         {
-            _currentUser = currentUser;
+            _apiClient = ShiftlyApiClient.Instance;
+            AvailableRoles = new ObservableCollection<string> { "Worker", "ShiftManager", "HRAdmin" };
 
-            LoadUsersCommand = new RelayCommand(async _ => await ExecuteLoadUsersAsync());
-            ChangeRoleCommand = new RelayCommand(async _ => await ExecuteChangeRoleAsync(), _ => CanChangeRole);
-            TestUnauthorizedAccessCommand = new RelayCommand(async _ => await ExecuteTestUnauthorizedAccessAsync());
-            LogoutCommand = new RelayCommand(_ => RequestLogout?.Invoke());
+            RefreshUsersCommand = new RelayCommand(async _ => await LoadDataAsync());
+            SaveRoleCommand = new RelayCommand(async _ => await SaveRoleAsync(), _ => SelectedUser != null);
+            ToggleStatusCommand = new RelayCommand(async _ => await ToggleStatusAsync(), _ => SelectedUser != null);
+            Test403Command = new RelayCommand(async _ => await Test403Async());
+            TriggerAiDialogCommand = new RelayCommand(_ => MessageBox.Show("מודול שיבוץ מבוסס AI מתוכנן לסבב 4 בהתאם להנחיות המנחה זכי חן.", "שיבוץ חכם", MessageBoxButton.OK, MessageBoxImage.Information));
+            LogoutCommand = new RelayCommand(_ => Logout());
 
-            // טעינה ראשונית
-            _ = ExecuteLoadUsersAsync();
+            _ = LoadDataAsync();
         }
 
-        public LoginResponseDTO CurrentUser
+        public AdminDashboardViewModel(LoginResponseDTO _) : this()
         {
-            get => _currentUser;
-            set => SetProperty(ref _currentUser, value);
         }
 
-        public ObservableCollection<UserListDTO> Users
+        public ObservableCollection<string> AvailableRoles { get; }
+        public ObservableCollection<UserListDTO> FilteredUsers
         {
-            get => _users;
-            set => SetProperty(ref _users, value);
+            get => _filteredUsers;
+            set => SetProperty(ref _filteredUsers, value);
         }
-
         public UserListDTO? SelectedUser
         {
             get => _selectedUser;
@@ -64,136 +52,109 @@ namespace Shiftly.Wpf.ViewModels
             {
                 if (SetProperty(ref _selectedUser, value))
                 {
-                    if (value != null)
-                    {
-                        SelectedNewRole = value.RoleName;
-                    }
-                    ChangeRoleCommand.RaiseCanExecuteChanged();
+                    OnPropertyChanged(nameof(SelectedUserDisplayName));
+                    if (value != null && AvailableRoles.Contains(value.RoleName))
+                        SelectedRole = value.RoleName;
+                    ((RelayCommand)SaveRoleCommand).RaiseCanExecuteChanged();
+                    ((RelayCommand)ToggleStatusCommand).RaiseCanExecuteChanged();
                 }
             }
         }
-
-        public string SelectedNewRole
+        public string SelectedRole
         {
-            get => _selectedNewRole;
+            get => _selectedRole;
+            set => SetProperty(ref _selectedRole, value);
+        }
+        public string SearchText
+        {
+            get => _searchText;
             set
             {
-                if (SetProperty(ref _selectedNewRole, value))
-                {
-                    ChangeRoleCommand.RaiseCanExecuteChanged();
-                }
+                if (SetProperty(ref _searchText, value))
+                    FilterUsers();
             }
         }
-
-        public string? StatusMessage
+        public string StatusMessage
         {
             get => _statusMessage;
             set => SetProperty(ref _statusMessage, value);
         }
-
-        public bool IsLoading
+        public DashboardStatsDTO Stats
         {
-            get => _isLoading;
-            set
-            {
-                if (SetProperty(ref _isLoading, value))
-                {
-                    ChangeRoleCommand.RaiseCanExecuteChanged();
-                }
-            }
+            get => _stats;
+            set => SetProperty(ref _stats, value);
+        }
+        public string SelectedUserDisplayName => SelectedUser != null ? $"{SelectedUser.FullName} ({SelectedUser.Username})" : "בחר עובד מהרשימה";
+
+        public ICommand RefreshUsersCommand { get; }
+        public ICommand SaveRoleCommand { get; }
+        public ICommand ToggleStatusCommand { get; }
+        public ICommand Test403Command { get; }
+        public ICommand TriggerAiDialogCommand { get; }
+        public ICommand LogoutCommand { get; }
+
+        private async Task LoadDataAsync()
+        {
+            StatusMessage = "טוען נתונים מהשרת...";
+            var users = await _apiClient.GetUsersAsync();
+            _allUsers = new ObservableCollection<UserListDTO>(users);
+            FilterUsers();
+
+            var stats = await _apiClient.GetDashboardStatsAsync();
+            if (stats != null) Stats = stats;
+
+            StatusMessage = $"נטענו {_allUsers.Count} משתמשים ומדדי סניף עדכניים.";
         }
 
-        public bool IsAdmin => CurrentUser.RoleName == nameof(UserRoleType.HRAdmin);
-        public bool IsGuest => CurrentUser.RoleName == nameof(UserRoleType.Guest);
-
-        public bool CanChangeRole =>
-            !IsLoading &&
-            IsAdmin &&
-            SelectedUser != null &&
-            !string.IsNullOrWhiteSpace(SelectedNewRole);
-
-        public async Task ExecuteLoadUsersAsync()
+        private void FilterUsers()
         {
-            IsLoading = true;
-            StatusMessage = "טוען רשימת משתמשים מהשרת...";
-
-            var (success, message, data) = await ShiftlyApiClient.Instance.GetAllUsersAsync(CurrentUser.RoleName);
-
-            IsLoading = false;
-
-            if (success && data != null)
-            {
-                Users = new ObservableCollection<UserListDTO>(data);
-                StatusMessage = $"נטענו {data.Count} משתמשים בהצלחה.";
-            }
+            if (string.IsNullOrWhiteSpace(SearchText))
+                FilteredUsers = new ObservableCollection<UserListDTO>(_allUsers);
             else
-            {
-                Users.Clear();
-                StatusMessage = $"חסימת גישה מהשרת (SEC-M08): {message}";
-            }
+                FilteredUsers = new ObservableCollection<UserListDTO>(_allUsers.Where(u =>
+                    u.FullName.Contains(SearchText, System.StringComparison.OrdinalIgnoreCase) ||
+                    u.Username.Contains(SearchText, System.StringComparison.OrdinalIgnoreCase)));
         }
 
-        private async Task ExecuteChangeRoleAsync()
+        private async Task SaveRoleAsync()
         {
-            if (!CanChangeRole || SelectedUser == null) return;
-
-            int roleId = SelectedNewRole switch
-            {
-                "Guest" => (int)UserRoleType.Guest,
-                "Worker" => (int)UserRoleType.Worker,
-                "ShiftManager" => (int)UserRoleType.ShiftManager,
-                "HRAdmin" => (int)UserRoleType.HRAdmin,
-                _ => (int)UserRoleType.Worker
-            };
-
-            IsLoading = true;
-            StatusMessage = $"מעדכן תפקיד עבור {SelectedUser.FullName}...";
-
-            var (success, message) = await ShiftlyApiClient.Instance.UpdateUserRoleAsync(
-                SelectedUser.UserId,
-                roleId,
-                CurrentUser.RoleName);
-
-            IsLoading = false;
-
+            if (SelectedUser == null) return;
+            StatusMessage = "מעדכן תפקיד...";
+            bool success = await _apiClient.UpdateUserRoleAsync(SelectedUser.UserId, SelectedRole);
             if (success)
             {
-                StatusMessage = $"התפקיד של {SelectedUser.FullName} עודכן ל-{SelectedNewRole}!";
-                await ExecuteLoadUsersAsync();
+                SelectedUser.RoleName = SelectedRole;
+                FilterUsers();
+                StatusMessage = "תפקיד המשתמש עודכן בהצלחה במסד.";
             }
-            else
+            else StatusMessage = "שגיאה בעדכון התפקיד בשרת.";
+        }
+
+        private async Task ToggleStatusAsync()
+        {
+            if (SelectedUser == null) return;
+            bool newStatus = !SelectedUser.IsActive;
+            bool success = await _apiClient.UpdateUserStatusAsync(SelectedUser.UserId, newStatus);
+            if (success)
             {
-                StatusMessage = $"שגיאה בעדכון: {message}";
+                SelectedUser.IsActive = newStatus;
+                FilterUsers();
+                StatusMessage = $"סטטוס המשתמש שונה ל-{(newStatus ? "פעיל" : "מושעה")}.";
             }
         }
 
-        /// <summary>
-        /// בדיקת אבטחה מיוחדת להצגה לבוחן הבגרות!
-        /// שולחת בקשת ניהול משתמשים עם Role מזויף של Worker כדי להוכיח שהשרת חוסם ב-403 Forbidden
-        /// </summary>
-        private async Task ExecuteTestUnauthorizedAccessAsync()
+        private async Task Test403Async()
         {
-            IsLoading = true;
-            StatusMessage = "מבצע ניסיון עקיפה (Fake Role: Worker) לבדיקת אבטחת השרת...";
+            string res = await _apiClient.Test403ForbiddenAsync();
+            MessageBox.Show(res, "בדיקת הרשאות שרת", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
 
-            var (success, message, _) = await ShiftlyApiClient.Instance.GetAllUsersAsync(nameof(UserRoleType.Worker));
-
-            IsLoading = false;
-
-            if (!success)
-            {
-                MessageBox.Show(
-                    $"השרת הגן על המערכת וחסם את הגישה כמצופה!\n\nתגובת השרת:\n{message}\n\nזהו יישום מדויק של חוק SEC-M08 (חסימת עקיפת ממשק בשרת).",
-                    "הוכחת אבטחת שרת (SEC-M08)",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
-
-                StatusMessage = "השרת חסם בהצלחה ניסיון גישה לא מורשה (403 Forbidden).";
-            }
-            else
-            {
-                StatusMessage = "אזהרה: השרת לא חסם את הבקשה!";
-            }
+        private void Logout()
+        {
+            _apiClient.Logout();
+            var loginWin = new Views.LoginWindow();
+            loginWin.Show();
+            Application.Current.Windows.OfType<Window>().FirstOrDefault(w => w is Views.AdminDashboardWindow)?.Close();
         }
     }
 }

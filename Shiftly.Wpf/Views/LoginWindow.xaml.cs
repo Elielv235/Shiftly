@@ -37,8 +37,16 @@ namespace Shiftly.Wpf.Views
 
         private void OpenDashboardWindow(LoginResponseDTO loggedInUser)
         {
-            var dashboard = new AdminDashboardWindow(loggedInUser);
-            dashboard.Show();
+            if (loggedInUser.RoleName == "HRAdmin")
+            {
+                var adminWin = new AdminDashboardWindow(loggedInUser);
+                adminWin.Show();
+            }
+            else
+            {
+                var workerWin = new WorkerAvailabilityWindow();
+                workerWin.Show();
+            }
         }
     }
 }

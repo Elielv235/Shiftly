@@ -8,20 +8,15 @@ namespace Shiftly.Wpf.Views
     {
         private readonly AdminDashboardViewModel _viewModel;
 
-        public AdminDashboardWindow(LoginResponseDTO loggedInUser)
+        public AdminDashboardWindow()
         {
             InitializeComponent();
-            _viewModel = new AdminDashboardViewModel(loggedInUser);
+            _viewModel = new AdminDashboardViewModel();
             DataContext = _viewModel;
-
-            _viewModel.RequestLogout += OnLogout;
         }
 
-        private void OnLogout()
+        public AdminDashboardWindow(LoginResponseDTO loggedInUser) : this()
         {
-            var loginWindow = new LoginWindow();
-            loginWindow.Show();
-            Close();
         }
     }
 }

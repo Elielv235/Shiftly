@@ -6,24 +6,31 @@ using Shiftly.Server.Security;
 
 namespace Shiftly.Server.Data
 {
-    /// <summary>
-    /// הקשר מסד הנתונים של פרויקט Shiftly
-    /// מנהל את המיפוי בין ישויות C# לטבלאות ב-SQL Server באמצעות Entity Framework Core
-    /// </summary>
     public class ShiftlyDbContext : DbContext
     {
-        public ShiftlyDbContext(DbContextOptions<ShiftlyDbContext> options) : base(options)
+        private static readonly byte[] AdminHash;
+        private static readonly byte[] AdminSalt;
+        private static readonly byte[] WorkerHash;
+        private static readonly byte[] WorkerSalt;
+
+        static ShiftlyDbContext()
         {
+            PasswordSecurityHelper.CreatePasswordHash("Admin123!", out AdminHash, out AdminSalt);
+            PasswordSecurityHelper.CreatePasswordHash("Worker123!", out WorkerHash, out WorkerSalt);
         }
 
-        public DbSet<Role> Roles => Set<Role>();
-        public DbSet<User> Users => Set<User>();
+        public ShiftlyDbContext(DbContextOptions<ShiftlyDbContext> options) : base(options) { }
+
+        public DbSet<Role> Roles { get; set; } = null!;
+        public DbSet<User> Users { get; set; } = null!;
+        public DbSet<Shift> Shifts { get; set; } = null!;
+        public DbSet<Availability> Availabilities { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // מיפוי טבלת Roles
+            // Roles configuration and seed
             modelBuilder.Entity<Role>(entity =>
             {
                 entity.ToTable("Roles");
@@ -32,7 +39,6 @@ namespace Shiftly.Server.Data
                 entity.HasIndex(r => r.RoleName).IsUnique();
                 entity.Property(r => r.Description).HasMaxLength(200);
 
-                // הזנת נתוני תפקידים קבועים (Seed Roles)
                 entity.HasData(
                     new Role { RoleId = 1, RoleName = "Guest", Description = "אורח - צפייה בדמו בלבד" },
                     new Role { RoleId = 2, RoleName = "Worker", Description = "עובד סניף - הגשת זמינות וצפייה בסידור עבודה אישי" },
@@ -41,39 +47,71 @@ namespace Shiftly.Server.Data
                 );
             });
 
-            // מיפוי טבלת Users
+            // Users configuration and seed
             modelBuilder.Entity<User>(entity =>
             {
                 entity.ToTable("Users");
                 entity.HasKey(u => u.UserId);
                 entity.Property(u => u.Username).IsRequired().HasMaxLength(50);
                 entity.HasIndex(u => u.Username).IsUnique();
-
                 entity.Property(u => u.PasswordHash).IsRequired();
                 entity.Property(u => u.PasswordSalt).IsRequired();
-
                 entity.Property(u => u.FullName).IsRequired().HasMaxLength(100);
                 entity.Property(u => u.Email).IsRequired().HasMaxLength(100);
                 entity.Property(u => u.PhoneNumber).IsRequired().HasMaxLength(20);
-
                 entity.Property(u => u.IsActive).HasDefaultValue(true);
                 entity.Property(u => u.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
 
-                // קשר של מפתח זר לטבלת Roles
                 entity.HasOne(u => u.Role)
                       .WithMany(r => r.Users)
                       .HasForeignKey(u => u.RoleId)
                       .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasData(
+                    new User
+                    {
+                        UserId = 1,
+                        Username = "admin",
+                        PasswordHash = AdminHash,
+                        PasswordSalt = AdminSalt,
+                        FullName = "אליאל וולקונסקי (מנהל ראשי)",
+                        Email = "admin@shiftly.co.il",
+                        PhoneNumber = "050-1234567",
+                        RoleId = 4,
+                        IsActive = true,
+                        CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                    },
+                    new User
+                    {
+                        UserId = 2,
+                        Username = "worker1",
+                        PasswordHash = WorkerHash,
+                        PasswordSalt = WorkerSalt,
+                        FullName = "דניאל כהן (עובד סניף)",
+                        Email = "daniel@shiftly.co.il",
+                        PhoneNumber = "052-7654321",
+                        RoleId = 2,
+                        IsActive = true,
+                        CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                    }
+                );
             });
+
+            // Seed sample shifts for branch metrics
+            modelBuilder.Entity<Shift>().HasData(
+                new Shift { ShiftId = 1, ShiftDate = DateTime.Today.AddDays(1), ShiftType = "Morning", RequiredWorkers = 4, CreatedByUserId = 1 },
+                new Shift { ShiftId = 2, ShiftDate = DateTime.Today.AddDays(1), ShiftType = "Evening", RequiredWorkers = 3, CreatedByUserId = 1 }
+            );
+
+            // Seed initial availability records for worker1 (UserId: 2)
+            modelBuilder.Entity<Availability>().HasData(
+                new Availability { AvailabilityId = 1, UserId = 2, TargetDate = DateTime.Today.AddDays(2), CanWorkMorning = true, CanWorkEvening = false, Notes = "זמין בוקר בלבד", Status = "Pending" },
+                new Availability { AvailabilityId = 2, UserId = 2, TargetDate = DateTime.Today.AddDays(3), CanWorkMorning = false, CanWorkEvening = true, Notes = "לימודים בבוקר", Status = "Pending" }
+            );
         }
 
-        /// <summary>
-        /// פונקציית אתחול נתונים ראשוניים למערכת (Seed Users)
-        /// מופעלת בעליית השרת כדי להבטיח קיום משתמש מנהל ומשתמש עובד לבדיקות והצגה לבוחן
-        /// </summary>
         public void SeedInitialUsers()
         {
-            // בדיקה אם קיים משתמש Admin
             if (!Users.Any(u => u.Username == "admin"))
             {
                 PasswordSecurityHelper.CreatePasswordHash("Admin123!", out byte[] hash, out byte[] salt);
@@ -85,13 +123,12 @@ namespace Shiftly.Server.Data
                     FullName = "אליאל וולקונסקי (מנהל ראשי)",
                     Email = "admin@shiftly.co.il",
                     PhoneNumber = "050-1234567",
-                    RoleId = 4, // HRAdmin
+                    RoleId = 4,
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow
                 });
             }
 
-            // בדיקה אם קיים משתמש עובד לדוגמה
             if (!Users.Any(u => u.Username == "worker1"))
             {
                 PasswordSecurityHelper.CreatePasswordHash("Worker123!", out byte[] hash, out byte[] salt);
@@ -103,13 +140,31 @@ namespace Shiftly.Server.Data
                     FullName = "דניאל כהן (עובד סניף)",
                     Email = "daniel@shiftly.co.il",
                     PhoneNumber = "052-7654321",
-                    RoleId = 2, // Worker
+                    RoleId = 2,
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow
                 });
             }
 
             SaveChanges();
+
+            if (!Shifts.Any())
+            {
+                Shifts.AddRange(
+                    new Shift { ShiftDate = DateTime.Today.AddDays(1), ShiftType = "Morning", RequiredWorkers = 4, CreatedByUserId = 1 },
+                    new Shift { ShiftDate = DateTime.Today.AddDays(1), ShiftType = "Evening", RequiredWorkers = 3, CreatedByUserId = 1 }
+                );
+                SaveChanges();
+            }
+
+            if (!Availabilities.Any())
+            {
+                Availabilities.AddRange(
+                    new Availability { UserId = 2, TargetDate = DateTime.Today.AddDays(2), CanWorkMorning = true, CanWorkEvening = false, Notes = "זמין בוקר בלבד", Status = "Pending" },
+                    new Availability { UserId = 2, TargetDate = DateTime.Today.AddDays(3), CanWorkMorning = false, CanWorkEvening = true, Notes = "לימודים בבוקר", Status = "Pending" }
+                );
+                SaveChanges();
+            }
         }
     }
 }

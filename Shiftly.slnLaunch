@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "MAIN ()",
+    "Projects": [
+      {
+        "Path": "Shiftly.Server\\Shiftly.Server.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "Shiftly.Wpf\\Shiftly.Wpf.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]
