@@ -92,8 +92,8 @@
             </Setter>
         </Style>
 
-        <!-- 3. Fix Calendar Header Month/Year Button (e.g. "מרץ 2026") -->
-        <Style x:Key="SolidCalendarHeaderButtonStyle" TargetType="{x:Type primitives:CalendarButton}">
+        <!-- 3. Fix Calendar Month Selection Buttons (Jan, Feb...) in Year View -->
+        <Style x:Key="SolidCalendarMonthButtonStyle" TargetType="{x:Type primitives:CalendarButton}">
             <Setter Property="Foreground" Value="#0F172A"/>
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="FontWeight" Value="Bold"/>
@@ -116,14 +116,40 @@
             </Setter>
         </Style>
 
-        <!-- 4. Combined Calendar Style -->
+        <!-- 4. Combined Calendar Style with Header Month/Year Button Fix -->
         <Style x:Key="SolidCalendarStyle" TargetType="Calendar">
             <Setter Property="Background" Value="#FFFFFF"/>
             <Setter Property="BorderBrush" Value="#F59E0B"/>
             <Setter Property="BorderThickness" Value="2"/>
             <Setter Property="Foreground" Value="#0F172A"/>
             <Setter Property="CalendarDayButtonStyle" Value="{StaticResource SolidCalendarDayButtonStyle}"/>
-            <Setter Property="CalendarButtonStyle" Value="{StaticResource SolidCalendarHeaderButtonStyle}"/>
+            <Setter Property="CalendarButtonStyle" Value="{StaticResource SolidCalendarMonthButtonStyle}"/>
+            <Style.Resources>
+                <!-- This overrides the Header Button ("נובמבר 2026") inside CalendarItem -->
+                <Style TargetType="Button">
+                    <Setter Property="Foreground" Value="#0F172A"/>
+                    <Setter Property="FontWeight" Value="Bold"/>
+                    <Setter Property="FontSize" Value="14"/>
+                    <Setter Property="Cursor" Value="Hand"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="Transparent" Padding="6,3">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center">
+                                        <ContentPresenter.Resources>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="#0F172A"/>
+                                                <Setter Property="FontWeight" Value="Bold"/>
+                                                <Setter Property="FontSize" Value="14"/>
+                                            </Style>
+                                        </ContentPresenter.Resources>
+                                    </ContentPresenter>
+                                </Border>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </Style.Resources>
         </Style>
 
         <!-- 5. Complete DatePicker Style -->
