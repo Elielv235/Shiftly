@@ -5,30 +5,7 @@
         WindowStartupLocation="CenterScreen" FlowDirection="RightToLeft"
         Background="#0F172A">
     <Window.Resources>
-        <!-- Explicit High-Contrast TabItem Style -->
-        <Style TargetType="TabItem">
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TabItem">
-                        <Border x:Name="TabBorder" Background="#0F172A" BorderBrush="#334155" BorderThickness="1,1,1,0" CornerRadius="8,8,0,0" Margin="0,0,4,0" Padding="18,10">
-                            <ContentPresenter x:Name="ContentSite" ContentSource="Header" HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="TabBorder" Property="Background" Value="#1E293B"/>
-                                <Setter TargetName="TabBorder" Property="BorderBrush" Value="#F59E0B"/>
-                                <Setter Property="Panel.ZIndex" Value="100"/>
-                            </Trigger>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="TabBorder" Property="Background" Value="#334155"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- High-Contrast Submit / Action Button Template -->
+        <!-- High-Contrast Submit Button Template -->
         <Style x:Key="SubmitAvailabilityButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="#F59E0B"/>
             <Setter Property="Foreground" Value="#0F172A"/>
@@ -60,6 +37,31 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!-- Clean, High-Contrast ComboBox Style (Dark bold text ensures 100% visibility) -->
+        <Style x:Key="HighContrastDayComboBoxStyle" TargetType="ComboBox">
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Setter Property="Foreground" Value="#0F172A"/>
+            <Setter Property="BorderBrush" Value="#F59E0B"/>
+            <Setter Property="BorderThickness" Value="1.5"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Padding" Value="10,8"/>
+        </Style>
+
+        <Style x:Key="HighContrastDayItemStyle" TargetType="ComboBoxItem">
+            <Setter Property="Foreground" Value="#0F172A"/>
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Style.Triggers>
+                <Trigger Property="IsHighlighted" Value="True">
+                    <Setter Property="Background" Value="#F59E0B"/>
+                    <Setter Property="Foreground" Value="#0F172A"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
     </Window.Resources>
 
     <Grid Margin="18">
@@ -71,7 +73,7 @@
         </Grid.RowDefinitions>
 
         <!-- Top Header Bar -->
-        <Border Grid.Row="0" Background="#1E293B" CornerRadius="8" Padding="15" Margin="0,0,0,12">
+        <Border Grid.Row="0" Background="#1E293B" CornerRadius="8" Padding="15" Margin="0,0,0,20">
             <DockPanel>
                 <TextBlock Text="🍔 שיפטלי | אזור אישי לעובד" Foreground="#F59E0B" FontSize="19" FontWeight="Bold" VerticalAlignment="Center"/>
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right">
@@ -81,34 +83,23 @@
             </DockPanel>
         </Border>
 
-        <!-- Guest Mode Banner (Role-Aware UI) -->
-        <Border Grid.Row="1" Background="#334155" BorderBrush="#F59E0B" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,0,0,12"
-                Visibility="{Binding GuestBannerVisibility}">
-            <TextBlock Text="🔒 מצב אורח (Guest Demo): צפייה בלבד. פעולות הגשת זמינות והחלפת משמרת זמינות למשתמשים רשומים בלבד."
-                       Foreground="#FDE68A" FontWeight="SemiBold" HorizontalAlignment="Center"/>
-        </Border>
+        <!-- Availability Form -->
+        <Border Grid.Row="1" Background="#1E293B" CornerRadius="8" Padding="25">
+            <StackPanel>
+                <TextBlock Text="בחר יום עבודה לשבוע הקרוב:" Foreground="#94A3B8" Margin="0,0,0,8" FontSize="14"/>
 
-        <!-- Two-Tab Worker Area: Availability (Cycle 2) + Schedule & Swap Requests (Cycle 3) -->
-        <TabControl Grid.Row="2" Background="#1E293B" BorderBrush="#334155" BorderThickness="1">
-
-            <!-- TAB 1: WORKER AVAILABILITY (Cycle 2 Preserved) -->
-            <TabItem>
-                <TabItem.Header>
-                    <TextBlock Text="📋 הגשת אילוצי זמינות" Foreground="#F59E0B" FontSize="14" FontWeight="Bold"/>
-                </TabItem.Header>
-                <Border Background="#1E293B" Padding="24">
-                    <StackPanel>
-                        <TextBlock Text="בחר יום עבודה לשבוע הקרוב:" Foreground="#94A3B8" Margin="0,0,0,8" FontSize="14"/>
-
-                        <ComboBox SelectedIndex="{Binding SelectedDayIndex, Mode=TwoWay, FallbackValue=0}"
-                                  Width="300" HorizontalAlignment="Left" Margin="0,0,0,20">
-                            <ComboBoxItem Content="יום ראשון (15/11/2026)"/>
-                            <ComboBoxItem Content="יום שני (16/11/2026)"/>
-                            <ComboBoxItem Content="יום שלישי (17/11/2026)"/>
-                            <ComboBoxItem Content="יום רביעי (18/11/2026)"/>
-                            <ComboBoxItem Content="יום חמישי (19/11/2026)"/>
-                            <ComboBoxItem Content="יום שישי (20/11/2026)"/>
-                        </ComboBox>
+                <!-- High-contrast, crystal-clear ComboBox for selecting target shift day -->
+                <ComboBox SelectedIndex="{Binding SelectedDayIndex, Mode=TwoWay, FallbackValue=0}" 
+                          Style="{StaticResource HighContrastDayComboBoxStyle}" 
+                          ItemContainerStyle="{StaticResource HighContrastDayItemStyle}"
+                          Width="300" HorizontalAlignment="Left" Margin="0,0,0,20">
+                    <ComboBoxItem Content="יום ראשון (15/11/2026)"/>
+                    <ComboBoxItem Content="יום שני (16/11/2026)"/>
+                    <ComboBoxItem Content="יום שלישי (17/11/2026)"/>
+                    <ComboBoxItem Content="יום רביעי (18/11/2026)"/>
+                    <ComboBoxItem Content="יום חמישי (19/11/2026)"/>
+                    <ComboBoxItem Content="יום שישי (20/11/2026)"/>
+                </ComboBox>
 
                         <TextBlock Text="משמרות מבוקשות (חובה לסמן לפחות אחת - SEC-M05):" Foreground="#94A3B8" Margin="0,0,0,10" FontSize="14"/>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
@@ -204,7 +195,7 @@
         </TabControl>
 
         <!-- Status & Confirmation Message -->
-        <Border Grid.Row="3" Background="#1E293B" CornerRadius="6" Padding="10" Margin="0,12,0,0">
+        <Border Grid.Row="2" Background="#1E293B" CornerRadius="6" Padding="10" Margin="0,15,0,0">
             <TextBlock Text="{Binding StatusMessage}" Foreground="#10B981" FontWeight="Bold" HorizontalAlignment="Center"/>
         </Border>
     </Grid>
